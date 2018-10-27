@@ -61,12 +61,18 @@ main()
     using namespace date;
     using sys_clock = std::chrono::system_clock;
 
+    /*
+     * a lot of vectors between 1958 and 1972 to
+     * check behaviour during the period when
+     * leap time was based on formulae, rather
+     * than discrete leap seconds
+     */
     std::vector<sys_days> inputs = {
       sys_days{ 1957_y / January / 1 },
-      sys_days{ 1958_y / January / 1 },  // a lot of vectors between 1958 and 1972 to
-      sys_days{ 1961_y / January / 1 },  // check behaviour during the period when
-      sys_days{ 1961_y / August / 1 },  // leap time was based on formulae, rather
-      sys_days{ 1962_y / January / 1 },  // than discrete leap seconds
+      sys_days{ 1958_y / January / 1 },  
+      sys_days{ 1961_y / January / 1 },  
+      sys_days{ 1961_y / August / 1 },  
+      sys_days{ 1962_y / January / 1 },  
       sys_days{ 1963_y / November / 1 },
       sys_days{ 1964_y / January / 1 },
       sys_days{ 1964_y / April / 1 },

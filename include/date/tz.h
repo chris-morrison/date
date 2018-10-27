@@ -2352,7 +2352,7 @@ utc_clock::to_sys(const utc_time<Duration>& ut)
     using CD = typename std::common_type<Duration, seconds>::type;
 
     auto const utc_sys_offset_pre_leap = detail::pre_leap_from_utc_epoch<CD>(ut);
-    auto ls = is_leap_second(ut);
+    auto ls = is_leap_second(ut - utc_sys_offset_pre_leap);
     auto tp = sys_time<CD>{ut.time_since_epoch() - utc_sys_offset_pre_leap - ls.second};
     if (ls.first)
         tp = floor<seconds>(tp) + seconds{1} - CD{1};
@@ -2391,8 +2391,8 @@ to_stream(std::basic_ostream<CharT, Traits>& os, const CharT* fmt,
     using CT = typename std::common_type<Duration, seconds>::type;
     const std::string abbrev("UTC");
     CONSTDATA seconds offset{0};
-    auto ls = is_leap_second(t);
     auto const pre_leap = detail::pre_leap_from_utc_epoch<CT>(t);
+    auto ls = is_leap_second(t - pre_leap);
     auto tp = sys_time<CT>{t.time_since_epoch() - (ls.second + pre_leap) };
     auto const sd = floor<days>(tp);
     year_month_day ymd = sd;

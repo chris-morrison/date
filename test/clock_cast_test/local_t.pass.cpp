@@ -67,9 +67,68 @@ main()
    // utc leap second
    {
      auto lu = local_days{2015_y/July/1_d} - milliseconds(1);
-     auto ut = clock_cast<utc_clock>(lu) + milliseconds(1000); //into leap second
-
+     auto ut = clock_cast<utc_clock>(lu) + milliseconds(500); //into leap second
      assert(clock_cast<local_t>(ut) == lu);
+
+
+     /*
+      * Expected behaviour during leap second (notice SYS time remains frozen 
+      * during the leap second)
+      * 2015-06-30 23:59:59.800 SYS  ==  2015-06-30 23:59:59.800 UTC 
+      * 2015-06-30 23:59:59.900 SYS  ==  2015-06-30 23:59:59.900 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.000 UTC <-- leap second start
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.100 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.200 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.300 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.400 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.500 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.600 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.700 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.800 UTC 
+      * 2015-06-30 23:59:59.999 SYS  ==  2015-06-30 23:59:60.900 UTC 
+      * 2015-07-01 00:00:00.000 SYS  ==  2015-07-01 00:00:00.000 UTC <-- leap second end
+      * 2015-07-01 00:00:00.100 SYS  ==  2015-07-01 00:00:00.100 UTC 
+      * 2015-07-01 00:00:00.200 SYS  ==  2015-07-01 00:00:00.200 UTC 
+     */
+     auto start = clock_cast<utc_clock>(sys_days{ 2015_y / July / 1 } - 200ms);
+     auto end = start + 1.4s;
+     
+     auto prev_utc = start;
+     auto increment = 100ms;
+
+     for (auto utc = start; utc < end; utc += increment)
+     {
+       auto sys = clock_cast<system_clock>(utc);
+
+       if (utc.time_since_epoch() < seconds(1435708827) /* pre 2015-06-30 23:59:60.000 UTC */) 
+       {
+         /* 
+          * 27 leap seconds from 1970 to this point, composed of:
+          *    2 leap seconds between 1970-01-01 to 1972-01-01 (formula-based)
+          *   25 leap seconds between 1972-01-01 to 2015-06-30 (discrete insertions)
+          */
+         assert(seconds(27) == (utc.time_since_epoch() - sys.time_since_epoch()));
+
+         prev_utc = utc;
+       }
+       else if (utc.time_since_epoch() >= seconds(1435708828) /* post 2015-07-01 00:00:00.000 UTC */)
+       {
+         /* a new leap second has been inserted */
+         assert(seconds(28) == (utc.time_since_epoch() - sys.time_since_epoch()));
+       }
+       else
+       {
+         /* in region 2015-06-30 23:59:60.000 UTC to 2015-07-01 00:00:00.000 UTC */
+         
+         /* sys time frozen */
+         assert(milliseconds(1435708799999) == sys.time_since_epoch());
+
+         /* UTC time progresses */
+         assert(utc == prev_utc + increment);
+         prev_utc = utc;
+       }
+     }
+
    }
 
    /// utc paper example
